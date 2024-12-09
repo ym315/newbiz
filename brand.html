@@ -1,0 +1,792 @@
+
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <title>기프트엔 비즈몰</title>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width">
+    <meta property="reply-to" content="" />
+    <meta name="author" content="GiftN" />
+    <meta property="copyright" content="" />
+    <meta name="robots" content="index,follow" />
+    <meta name="keywords" content="기업전용 모바일쿠폰, B2B대량발송, 기업이벤트 경품, 정기발송, 등급별 상시할인, 문자발송 서비스, 포인트몰 웹/모바일 API연동 제공, 모바일솔루션" />
+    <meta name="description" content="기업회원으로 등록하시면 상시 5%~10%할인 제공되며, 최대 20%까지 할인되는 이벤트도 활용해 보세요">
+
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="기프트레터 비즈몰 (기프트엔, GiftN)입니다">
+    <meta property="og:description" content="기업회원으로 등록하시면 상시 5%~10%할인 제공되며, 최대 20%까지 할인되는 이벤트도 활용해 보세요">
+    <meta property="og:image" content="https://giftletter77.hgodo.com/com/sns_thum.png ">
+    <meta property="og:url" content="http://www.gift-n.co.kr">
+
+    <link rel="stylesheet" href="/_css/layout.css" />
+    <link rel="stylesheet" href="/_css/slick.css" />
+    <link rel="stylesheet" href="/_css/slick-theme.css" />
+
+
+    <script src="/js/jquery-1.11.3.min.js"></script>
+    <script src="/js/slick.js"></script>
+    <script type="text/javascript" src="/Scripts/js.cookie.js"></script>
+
+    <!-- s: 현재페이지에만 적용할 특정 스크립트 추가영역 -->
+    <!-- <link rel="stylesheet" href="//code.jquery.com/ui/1.11.0/themes/smoothness/jquery-ui.css"/> -->
+    <!-- <link rel="stylesheet" href="/_css/sub.css" /> -->
+    <script src="https://code.jquery.com/ui/1.11.0/jquery-ui.js"></script>
+    <link rel="stylesheet" href="/_css/common.css">
+
+    <script>
+        $(function () {
+            $("#slider-range").slider({
+                range: true,
+                min: 0,
+                max: 200000,
+                step: 100,
+                values: [0, 200000],
+                slide: function (event, ui) {
+                    $("#min").val(ui.values[0]);
+                    $("#max").val(ui.values[1]);
+                }
+            });
+            $("#min").val($("#slider-range").slider("values", 0));
+            $("#max").val($("#slider-range").slider("values", 1));
+        });
+
+        //On Click Event
+        $(document).ready(function () {
+
+            //브랜드 탭 선택
+            $("ul.cate_tab li").removeClass("on");
+            $("#MCT00").addClass("on");
+
+
+            //On Click Event
+            $("ul.cate_tab li").click(function () {
+
+                //$("ul.cate_tab li").removeClass("on");
+                //$(this).addClass("on");
+
+                var id_value = $(this).attr('id');
+                document.location.href = "/Brand/Brand/" + id_value;
+
+                return true;
+            });
+
+            //브랜드 선택
+            $("ul.con_box li").click(function () {
+                var brand_cd = $(this).attr('id');
+                $("#hd_brand_cd").val(brand_cd);
+                select('1', '1');
+            });
+
+            //검색
+            $(".btn_bk").click(function () {
+                select('1', '1');
+            });
+
+            //초기화
+            $(".btn_wh").click(function () {
+                $("#keyword").val("");
+                document.location.href = "/Brand/Brand/";
+                return true;
+            });
+
+            //키워드 검색
+            $(".btn_search").click(function () {
+                var keyword = $("#keyword").val();
+                if (keyword == '' || keyword == null) {
+                    alert('입력된 키워드가 없습니다.');
+                }
+                else {
+                    select('1', '1');
+                }
+            });
+
+            $("#keyword").keypress(function (key) {
+                if (key.keyCode == 13) {
+                    key.preventDefault();
+                    var keyword = $("#keyword").val();
+                    if (keyword == '' || keyword == null) {
+                        alert('입력된 키워드가 없습니다.');
+                    }
+                    else {
+                        select('1', '1');
+                    }
+                }
+            });
+
+        });
+
+        function fn_Sel(sort) {
+            $("#hd_page").val(sort);
+            select(sort, '1');
+        }
+
+        function fn_Page(cpage) {
+            var sort = $("#hd_page").val()
+            select(sort, cpage);
+        }
+
+        function comma(str) {
+            str = String(str);
+            return str.replace(/(\d)(?=(?:\d{3})+(?!\d))/g, '$1,');
+        }
+
+        function select(sort, cpage) {
+            var mct_cd = $('#hd_Mct').val();
+            var offset = $('#prd_list').offset(); //선택한 태그의 위치를 반환
+            var brand_cd = $('#hd_brand_cd').val();
+            var min = $('#min').val();
+            var max = $('#max').val();
+            var sel_count = $('#sel_count option:selected').val();
+            var keyword = $("#keyword").val();
+
+            $.ajax({
+                type: 'GET',
+                url: '/Brand/GetBrandItemList',
+                datatype: JSON,
+                data: {
+                    'mct_cd': mct_cd,
+                    'brand_cd': brand_cd,
+                    'min_price': min,
+                    'max_price': max,
+                    'keyword': keyword,
+                    'pagelen': sel_count,
+                    'sort': sort,
+                    'cpage': cpage
+                },
+                success: function (data) {
+                    var totcnt = 0;
+                    var totpage = 0;
+                    var pc_price = 0;
+
+                    $('#prd_list').empty();
+                    $.each(data, function (i, item) {
+                        if (i == 0) {
+                            totcnt = item.totcnt;
+                            totpage = item.totpage;
+                        }
+                        if (item.brand_cd == "173") {
+                            var rows = '<li><a href="/Brand/GoodsDetail?gds_cd=' + item.gds_cd + '"><div class="img_box"><img src="https://image.gift-n.net/mall/goods/' + item.gds_cd + '.jpg" /></div>' +
+                                '<div class="txt_box"><p><em>[' + item.brand_name + ']</em>' + item.gds_name + '</p><p><span class="b_price">' + comma(item.gds_price) + '원</span></p></div></a></li>';
+                            $('#prd_list').append(rows);
+                        }
+                        else {
+                            pc_price = item.gds_price * 0.9;
+                            var rows = '<li><a href="/Brand/GoodsDetail?gds_cd=' + item.gds_cd + '"><div class="img_box"><img src="https://image.gift-n.net/mall/goods/' + item.gds_cd + '.jpg" /></div>' +
+                                '<div class="txt_box"><p><em>[' + item.brand_name + ']</em>' + item.gds_name + '</p><p><span class="b_sale">~10%</span><span class="b_price">' + comma(pc_price) +
+                                '원</span><span class="b_nprice">' + comma(item.gds_price) + '원</span></p></div></a></li>';
+                            $('#prd_list').append(rows);
+                        }
+                    });
+                    $('#prd_list').focus();
+                    $('html').animate({ scrollTop: offset.top }, 400);
+
+                    $('#list_page').empty();
+                    if (totpage == 1) {
+                        var rows2 = '<a href="#" class="first_btn">Prev</a><ul><li class="active">1</li></ul><a href="#" class="last_btn">Next</a>';
+                        $('#list_page').append(rows2);
+                    } else if (totpage < 10) {
+                        var prev = '<a href="#" class="first_btn">Prev</a>';
+                        var middle = '';
+                        var next = '<a href="#" class="last_btn">Next</a>';
+                        var rows3 = ''
+                        for (var i = 1; i < totpage; i++) {
+                            if (cpage == i) {
+                                middle += '<li class="active"><a href="javascript:fn_Page(' + i + ');">' + i + '</a></li>'
+                            }
+                            else {
+                                middle += '<li><a href="javascript:fn_Page(' + i + ');">' + i + '</a></li>'
+                            }
+                        }
+                        rows3 = prev + '<ul>' + middle + '</ul>' + next;
+                        $('#list_page').append(rows3);
+                    } else {
+
+                        var pageFrom = parseInt((cpage - 1) / 10) * 10 + 1;
+                        var pageTo = totpage;
+                        if (totpage > pageFrom + 9) {
+                            pageTo = pageFrom + 9;
+                        }
+                        //이전 10개 표시
+                        var prev = '<a href="#" class="first_btn">Prev</a>';
+                        if (parseInt((cpage - 1) / 10) > 0) {
+                            prev = '<a href="javascript:fn_Page(' + ((+pageFrom) - 1) + ');" class="first_btn">Prev</a>';
+                        }
+
+                        //페이지 네비게이션
+                        var middle = '';
+                        var rows3 = ''
+                        for (var i = pageFrom; i <= pageTo; i++) {
+                            if (cpage == i) {
+                                middle += '<li class="active"><a href="javascript:fn_Page(' + i + ');">' + i + '</a></li>'
+                            }
+                            else {
+                                middle += '<li><a href="javascript:fn_Page(' + i + ');">' + i + '</a></li>'
+                            }
+                        }
+
+
+                        //다음 10개 표시
+                        var next = '<a href="#" class="last_btn">Next</a>';
+                        if (pageTo < totpage) {
+                            next = '<a href="javascript:fn_Page(' + ((+pageTo) + 1) + ');" class="last_btn">Next</a>';
+                        }
+
+                        //결합
+                        rows3 = prev + '<ul>' + middle + '</ul>' + next;
+                        $('#list_page').append(rows3);
+                    }
+
+
+                    $('#totcnt').empty();
+                    var rows4 = '<p>검색결과 <em>' + totcnt+ '</em>개</p>';
+                    $('#totcnt').append(rows4);
+
+                    //정렬순서 클레스 적용
+                    $('#sort1').removeClass("on");
+                    $('#sort3').removeClass("on");
+                    $('#sort4').removeClass("on");
+                    if (sort == "1")
+                        $('#sort1').addClass("on");
+                    else if (sort == "3")
+                        $('#sort3').addClass("on");
+                    else if (sort == "4")
+                        $('#sort4').addClass("on");
+
+                },
+                error: function (data) { }
+            });
+        }
+
+    </script>
+    <!-- e: 현재페이지에만 적용할 특정 스크립트 추가영역 -->
+</head>
+<body>
+
+
+
+
+    <div id="A_Wrap">
+        
+        <header class="head">
+            <article class="head_top">
+                <h2 class="none">head_top</h2>
+                <div class="maxwidth flex_spacebt">
+                    <span>
+                        <span>NOTICE</span>
+                        기프트엔 비즈몰 증빙서류 관련 안내
+                    </span>
+                    <ul class="head_top_menu">
+                        <li><a href="#">로그인</a></li>
+                        <li><a href="#">회원가입</a></li>
+                        <li><a href="#">회사소개</a></li>
+                        <li><a href="#">고객센터</a></li>
+                        <li><a href="#">기업문의</a></li>
+                    </ul>
+                </div>
+    
+            </article>
+            <article class="head_main">
+                <h2 class="none">head_main</h2>
+                <ul class="maxwidth flex_spacebt">
+                    <li>
+                        <ul class="social">
+                            <li><a href="https://blog.naver.com/giftn777" target="_blank"><i class="social_icon sns1"></i>블로그</a></li>
+                            <li><a href="https://www.facebook.com/%EA%B8%B0%ED%94%84%ED%8A%B8%EB%A0%88%ED%84%B0-105017377562393" target="_blank"><i class="social_icon sns2"></i>페이스북</a></li>
+                            <li><a href="https://www.instagram.com/giftletter/" target="_blank"><i class="social_icon sns3"></i>인스타그램</a></li>
+                        </ul>
+                    </li>
+                    <li class="logo">
+                        <a href="#"><img class="main_logo" src="/images/common/logo.png" alt="로고메인이미지"></a>  
+                    </li>
+                    <li class="mainsearch">
+                        <input type="text" class="search_txt" id="mainsearch" name="mainsearch" placeholder="검색어를 입력해주세요." maxlength="20">
+                        <button type="button" class="search_btn">서치</button>
+                        <div>
+                            <span><a href="#"> #신세계상품권</a></span>
+                            <span><a href="#"> #스타벅스특가 </a></span>
+                            <span><a href="#"> #공차할인 </a></span>
+                            <span><a href="#"> #특가이벤트 </a></span>
+                            <span><a href="#"> #투썸 </a></span>
+                        </div>
+                    </li>
+                </ul>
+            </article>
+            <article class="head_menu">
+                <h2 class="none">head_top_menu</h2>
+                <ul class="head_menu_con maxwidth flex_spacear">
+                    <li><a href="#">브랜드샵</a></li>
+                    <li><a href="#">이벤트</a></li>
+                    <li><a href="#">온라인 견적서</a></li>
+                    <li>
+                        <a href="#">마이페이지</a>
+                        <ul class="head_menu_sub">
+                            <li><a href="/Mypage/Mypage">내정보관리</a></li>
+                            <li><a href="/Mypage/MypageCheck">회원정보관리</a></li>
+                            <li><a href="/Mypage/MypageSendList">발송내역관리</a></li>
+                            <li><a href="/Mypage/MypageCharge">충전금관리</a></li>
+                            <li><a href="/Mypage/MypageEstimate">상품견적관리</a></li>
+                            <li><a href="/Mypage/MypageMms">문자메시지관리</a></li>
+                            <li><a href="/Brand/WishList">찜목록관리</a></li>
+                        </ul>
+                    </li>
+                    <li>
+                        <a href="#">고객센터</a>
+                        <ul class="head_menu_sub">
+                            <li><a href="/Notice/Notice">공지사항</a></li>
+                            <li><a href="/Notice/Qna">1:1 문의</a></li>
+                            <li><a href="/Notice/Faq">자주하는 질문</a></li>
+                        </ul>
+                    </li>
+                </ul>
+                <script type="text/javascript">
+                    $(".head_menu_con > li").mouseover(function () {
+                        // $(this).children(".head_menu_sub").fadeIn(100);
+                        $(this).children(".head_menu_sub").stop().slideDown(300);
+                    });
+                    $(" .head_menu_con > li, .head_menu_sub").mouseleave(function () {
+                        $(this).children(".head_menu_sub").stop().slideUp(300);
+                    });
+                </script>
+            </article>
+    
+    
+        </header>
+        <div id="A_Container_Wrap">
+            <div class="inner">
+                <ul class="nav">
+                    <li class="ic_home">Home</li>
+                    <li>브랜드샵</li>
+                </ul>
+                <div class="sub_contents">
+                    <div class="sub_tit">
+                        <h3>브랜드샵</h3>
+                    </div>
+                    <div class="shop_wrap">
+                        <ul class="condition_set">
+                            <li class="cate_list">
+                                <ul class="cate_tab">
+                                    <li id="MCT00" class="on"><a href="#"><i></i><p>전체</p></a></li>
+                                    <li id="MCT01"><a href="#"><i></i><p>커피/음료</p></a></li>
+                                    <li id="MCT02"><a href="#"><i></i><p>아이스크림</p></a></li>
+                                    <li id="MCT03"><a href="#"><i></i><p>베이커리</p></a></li>
+                                    <li id="MCT04"><a href="#"><i></i><p>피자/치킨</p></a></li>
+                                    <li id="MCT05"><a href="#"><i></i><p>패스트푸드</p></a></li>
+                                    <li id="MCT06"><a href="#"><i></i><p>외식</p></a></li>
+                                    <li id="MCT07"><a href="#"><i></i><p>편의점</p></a></li>
+                                    <li id="MCT08"><a href="#"><i></i><p>상품권/게임</p></a></li>
+                                    <li id="MCT09"><a href="#"><i></i><p>레스토랑</p></a></li>
+                                </ul>
+                            </li>
+                            <li class="brand_list">
+                                <!-- <strong class="tit">브랜드</strong> -->
+                                <input type="hidden" id="hd_Mct_Cd" name="hd_Mct_Cd" value="MCT00" />
+                                <ul class="con_box">
+                                    <li id="308"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/308.jpg" /></a></li>
+                                    <li id="308"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/308.jpg" /></a></li>
+                                    <li id="308"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/308.jpg" /></a></li>
+                                    <li id="308"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/308.jpg" /></a></li>
+                                    <li id="308"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/308.jpg" /></a></li>
+                                    <li id="308"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/308.jpg" /></a></li>
+                                    <li id="308"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/308.jpg" /></a></li>
+                                    <li id="308"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/308.jpg" /></a></li>
+                                    <li id="308"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/308.jpg" /></a></li>
+                                    <li id="308"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/308.jpg" /></a></li>
+                                    <li id="308"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/308.jpg" /></a></li>
+                                    <li id="308"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/308.jpg" /></a></li>
+                                    
+                                    <li id="308"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/308.jpg" /></a></li>
+                                </ul>
+                                
+                                <!-- <ul class="con_box">
+                                                <li id="308"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/308.jpg" /></a></li>
+                                                <li id="453"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/453.jpg" /><span class="brand_voucher">금액권</span></a></li>
+                                                <li id="461"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/461.jpg" /></a></li>
+                                                <li id="516"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/516.jpg" /></a></li>
+                                                <li id="485"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/485.jpg" /></a></li>
+                                                <li id="38"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/38.jpg" /></a></li>
+                                                <li id="422"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/422.jpg" /></a></li>
+                                                <li id="506"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/506.jpg" /></a></li>
+                                                <li id="566"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/566.jpg" /></a></li>
+                                                <li id="493"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/493.jpg" /></a></li>
+                                                <li id="226"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/226.jpg" /></a></li>
+                                                <li id="475"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/475.jpg" /><span class="brand_voucher">금액권</span></a></li>
+                                                <li id="477"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/477.jpg" /></a></li>
+                                                <li id="478"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/478.jpg" /></a></li>
+                                                <li id="322"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/322.jpg" /></a></li>
+                                                <li id="561"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/561.jpg" /></a></li>
+                                                <li id="340"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/340.jpg" /></a></li>
+                                                <li id="479"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/479.jpg" /><span class="brand_voucher">금액권</span></a></li>
+                                                <li id="544"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/544.jpg" /></a></li>
+                                                <li id="441"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/441.jpg" /></a></li>
+                                                <li id="576"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/576.jpg" /></a></li>
+                                                <li id="413"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/413.jpg" /></a></li>
+                                                <li id="484"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/484.jpg" /></a></li>
+                                                <li id="577"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/577.jpg" /></a></li>
+                                                <li id="404"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/404.jpg" /></a></li>
+                                                <li id="457"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/457.jpg" /></a></li>
+                                                <li id="339"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/339.jpg" /></a></li>
+                                                <li id="490"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/490.jpg" /></a></li>
+                                                <li id="598"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/598.jpg" /></a></li>
+                                                <li id="439"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/439.jpg" /></a></li>
+                                                <li id="440"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/440.jpg" /></a></li>
+                                                <li id="535"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/535.jpg" /></a></li>
+                                                <li id="567"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/567.jpg" /></a></li>
+                                                <li id="334"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/334.jpg" /></a></li>
+                                                <li id="272"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/272.jpg" /></a></li>
+                                                <li id="455"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/455.jpg" /><span class="brand_voucher">금액권</span></a></li>
+                                                <li id="579"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/579.jpg" /></a></li>
+                                                <li id="63"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/63.jpg" /></a></li>
+                                                <li id="458"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/458.jpg" /></a></li>
+                                                <li id="548"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/548.jpg" /></a></li>
+                                                <li id="30"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/30.jpg" /></a></li>
+                                                <li id="507"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/507.jpg" /></a></li>
+                                                <li id="563"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/563.jpg" /></a></li>
+                                                <li id="556"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/556.jpg" /></a></li>
+                                                <li id="555"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/555.jpg" /></a></li>
+                                                <li id="569"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/569.jpg" /></a></li>
+                                                <li id="505"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/505.jpg" /></a></li>
+                                                <li id="550"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/550.jpg" /></a></li>
+                                                <li id="549"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/549.jpg" /></a></li>
+                                                <li id="536"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/536.jpg" /></a></li>
+                                                <li id="578"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/578.jpg" /></a></li>
+                                                <li id="107"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/107.jpg" /></a></li>
+                                                <li id="508"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/508.jpg" /></a></li>
+                                                <li id="27"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/27.jpg" /></a></li>
+                                                <li id="570"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/570.jpg" /></a></li>
+                                                <li id="547"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/547.jpg" /></a></li>
+                                                <li id="574"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/574.jpg" /></a></li>
+                                                <li id="463"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/463.jpg" /><span class="brand_voucher">금액권</span></a></li>
+                                                <li id="409"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/409.jpg" /></a></li>
+                                                <li id="585"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/585.jpg" /></a></li>
+                                                <li id="252"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/252.jpg" /></a></li>
+                                                <li id="582"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/582.jpg" /></a></li>
+                                                <li id="514"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/514.jpg" /></a></li>
+                                                <li id="436"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/436.jpg" /></a></li>
+                                                <li id="533"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/533.jpg" /></a></li>
+                                                <li id="545"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/545.jpg" /></a></li>
+                                                <li id="542"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/542.jpg" /></a></li>
+                                                <li id="313"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/313.jpg" /></a></li>
+                                                <li id="593"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/593.jpg" /></a></li>
+                                                <li id="571"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/571.jpg" /></a></li>
+                                                <li id="454"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/454.jpg" /></a></li>
+                                                <li id="564"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/564.jpg" /></a></li>
+                                                <li id="554"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/554.jpg" /></a></li>
+                                                <li id="551"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/551.jpg" /></a></li>
+                                                <li id="242"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/242.jpg" /></a></li>
+                                                <li id="526"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/526.jpg" /></a></li>
+                                                <li id="467"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/467.jpg" /></a></li>
+                                                <li id="552"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/552.jpg" /></a></li>
+                                                <li id="306"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/306.jpg" /></a></li>
+                                                <li id="419"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/419.jpg" /></a></li>
+                                                <li id="541"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/541.jpg" /></a></li>
+                                                <li id="469"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/469.jpg" /><span class="brand_voucher">금액권</span></a></li>
+                                                <li id="310"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/310.jpg" /></a></li>
+                                                <li id="546"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/546.jpg" /></a></li>
+                                                <li id="543"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/543.jpg" /></a></li>
+                                                <li id="333"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/333.jpg" /></a></li>
+                                                <li id="470"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/470.jpg" /></a></li>
+                                                <li id="448"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/448.jpg" /></a></li>
+                                                <li id="332"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/332.jpg" /></a></li>
+                                                <li id="534"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/534.jpg" /></a></li>
+                                                <li id="596"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/596.jpg" /></a></li>
+                                                <li id="473"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/473.jpg" /></a></li>
+                                                <li id="474"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/474.jpg" /></a></li>
+                                                <li id="314"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/314.jpg" /></a></li>
+                                                <li id="583"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/583.jpg" /></a></li>
+                                                <li id="565"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/565.jpg" /></a></li>
+                                                <li id="244"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/244.jpg" /></a></li>
+                                                <li id="476"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/476.jpg" /></a></li>
+                                                <li id="562"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/562.jpg" /></a></li>
+                                                <li id="481"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/481.jpg" /></a></li>
+                                                <li id="525"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/525.jpg" /></a></li>
+                                                <li id="209"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/209.jpg" /></a></li>
+                                                <li id="331"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/331.jpg" /></a></li>
+                                                <li id="315"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/315.jpg" /></a></li>
+                                                <li id="452"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/452.jpg" /></a></li>
+                                                <li id="388"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/388.jpg" /></a></li>
+                                                <li id="258"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/258.jpg" /></a></li>
+                                                <li id="369"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/369.jpg" /></a></li>
+                                                <li id="517"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/517.jpg" /></a></li>
+                                                <li id="595"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/595.jpg" /></a></li>
+                                                <li id="233"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/233.jpg" /></a></li>
+                                                <li id="491"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/491.jpg" /><span class="brand_voucher">금액권</span></a></li>
+                                                <li id="460"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/460.jpg" /></a></li>
+                                                <li id="465"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/465.jpg" /></a></li>
+                                                <li id="173"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/173.jpg" /></a></li>
+                                                <li id="471"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/471.jpg" /></a></li>
+                                                <li id="472"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/472.jpg" /><span class="brand_voucher">금액권</span></a></li>
+                                                <li id="424"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/424.jpg" /></a></li>
+                                                <li id="320"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/320.jpg" /></a></li>
+                                                <li id="501"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/501.jpg" /></a></li>
+                                                <li id="15"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/15.jpg" /></a></li>
+                                                <li id="527"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/527.jpg" /></a></li>
+                                                <li id="283"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/283.jpg" /></a></li>
+                                                <li id="581"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/581.jpg" /></a></li>
+                                                <li id="446"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/446.jpg" /></a></li>
+                                                <li id="323"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/323.jpg" /></a></li>
+                                                <li id="268"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/268.jpg" /></a></li>
+                                                <li id="214"><a href="#"><img src="https://image.gift-n.net/template_v1/brand/214.jpg" /></a></li>
+                                </ul>  -->
+                          
+                          
+                          
+                            </li>
+                            <li class="price_range">
+                                <strong class="tit">가격</strong>
+                                <div class="con_box">
+                                    <p><input type="text" name="min" id="min" readonly=""></p>
+                                    <div id="slider-range"></div>
+                                    <p><input type="text" name="max" id="max" readonly=""></p>
+                                </div>
+                                <div class="add_price">
+                                    <p class="adp_left">최소금액</p>
+                                    <p class="adp_right">최대금액</p>
+                                </div>
+                            </li>
+                        </ul>
+                        <div class="btn_box btn_m">
+                            <button class="btn_bk" type="button">상품 검색</button>
+                            <button class="btn_wh" type="button">검색 초기화</button>
+                        </div>
+                        <div class="board_top">
+                            <div id="totcnt"></div>
+                            <div class="search_input">
+                                <input id="keyword" name="keyword" type="text" placeholder="결과 내 재 검색" />
+                                <button class="btn_search" type="button">검색</button>
+                            </div>
+                            <div class="float_r">
+                                <ul>
+                                    <li id="sort1"><a href="javascript:fn_Sel('1');">인기상품순</a></li>
+                                    <li id="sort3"><a href="javascript:fn_Sel('3');">낮은가격순</a></li>
+                                    <li id="sort4"><a href="javascript:fn_Sel('4');">높은가격순</a></li>
+                                </ul>
+                                <select id="sel_count">
+                                    <option value="20">20개씩 보기</option>
+                                    <option value="40">40개씩 보기</option>
+                                </select>
+                            </div>
+                        </div>
+                        <ul id="prd_list" class="prd_list">
+                        </ul>
+                        <div id="list_page" class="list_page">
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>        
+        <input type="hidden" id="hd_brand_cd" name="hd_brand_cd" />
+        <input type="hidden" id="hd_page" name="hd_page" value="1" />
+        <input type="hidden" id="hd_Mct" name="hd_Mct" value="MCT00"/>
+        <footer class="foot">
+            <section class="foot_info1">
+                <ul>
+                    <li></li>
+                    <li></li>
+                    <li></li>
+                    <li></li>
+                    <li></li>
+                </ul>
+            </section>
+            <section class="foot_info2 maxwidth">
+                <article class="finfo2_1">
+                    <ul>
+                        <li><a href="#" target="_parent">회사소개</a></li>
+                        <li><a href="#" target="_parent">기업문의</a></li>
+                        <li><a href="#" target="_parent">개인정보 처리방침</a></li>
+                        <li><a href="#" target="_parent">이용약관</a></li>
+                    </ul>
+                </article>
+                <article class="finfo2_2">
+                    <p class="footer_title">CUSTOMER CENTER</p>
+                    <p class="info_point"><i class="xi-call"></i>1600 - 4072</p>
+                    <span class="pre">- 평일 AM 09:00~PM 06:00  (점심시간 12:30 - 13:30)
+                        -(토,일요일 / 공휴일 휴무)
+                        
+                    </span>
+                    <div>
+                        <ul class="list_btnpoint">
+                            <li><button><i class="xi-message-o xi-2x"></i><span>1:1문의</span></button></li>
+                            <li><button><i class="xi-forum-o xi-2x"></i><span>자주하는 질문</span></button></li>
+                        </ul>
+                    </div>
+                </article>
+                <article class="finfo2_3">
+                    <p class="footer_title">BANKING INFO</p>
+                    <p class="info_point"> 우리 1005-802-253840 </p>
+                    <p>(예금주:기프트레터)</p>
+                </article>
+                <article class="finfo2_4">
+                    <p class="footer_title">QUICK MENU</p>
+                    <ul>
+                        <li>
+                            <a href="#">
+                                <i><span></span></i>
+                                <p>공지사항</p>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#">
+                                <i><span></span></i>
+                                <p>이벤트</p>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#">
+                                <i><span></span></i>
+                                <p>마이페이지</p>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#">
+                                <i><span></span></i>
+                                <p>온라인 견적서</p>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#">
+                                <i><span></span></i>
+                                <p>브랜드샵</p>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#">
+                                <i><span></span></i>
+                                <p>고객센터</p>
+                            </a>
+                        </li>
+                    </ul>                
+                </article>
+            </section>
+            <section class="foot_info3">
+                <div>
+                    <a href="#"><img class="main_logo" src="/images/common/logo.png" alt="로고메인이미지"></a>  
+                    <p>
+                        <span class="fotinfo_title">회사명 : </span> 기프트레터(주) 
+                        <span class="fotinfo_title">주소 :  </span>서울 서초구 논현로 175, 신한빌딩 3층  
+                        <span class="fotinfo_title">사업자등록번호 : </span> 220-88-57522
+                        <br/>
+                        <span class="fotinfo_title">고객센터 : </span> 1600-4072 
+                        <span class="fotinfo_title">Fax : </span>02-6971-9513
+                        <span class="fotinfo_title">E-mail :</span> mkt@gift-n.co.kr
+                        <br/><br/>
+                        COPYRIGHT 2021 giftletter ALL RIGHTS RESERVED.
+                    </p>
+                </div>
+            </section>
+    
+        </footer>
+    </div>
+
+    
+
+    <script>
+        $(function () {
+            $(".bizmoney").mouseover(function () {
+                $(this).addClass('on');
+            });
+            $(".bizmoney").mouseleave(function () {
+                $(this).removeClass('on');
+            });
+        });
+    </script>
+
+
+
+
+
+    <script type="text/javascript">
+        function fnSelect() {
+            var min = $("#min").val();
+            var max = $("#max").val();
+
+            alert(min);
+            alert(max);
+        }
+
+
+        function BrandClick() {
+
+            var mct_cd = $("#hd_Mct_Cd").val();
+
+            $.ajax({
+                url: '/Brand/Brand',
+                contentType: 'application/json; charset=utf-8',
+                data: {
+                    mct_cd: mct_cd
+                },
+                type: 'GET'
+            })
+                .success(function (result) {
+
+                })
+                .error(function (xhr, status) {
+                    alert('잠시후 이용바랍니다..');
+                })
+        }
+
+    </script>
+
+
+    <script src="/Scripts/owl.carousel.min.js"></script>
+    <script type="text/javascript">
+        $(function () {
+            $(".owl-carousel").owlCarousel();
+        });
+    </script>
+    <script>
+        $(document).on('ready', function () {
+            $(".quick_list").slick({
+                accessibility: false,
+                autoplay: false,
+                speed: 1000,
+                slidesToShow: 3,
+                slidesToScroll: 1,
+                dots: false,
+                vertical: true,
+                prevArrow: "<img src='/html/images/sub/amount_up.png' style='margin-bottom: 8px;'>",
+                nextArrow: "<img src='/html/images/sub/amount_down.png'>"
+            });
+
+            $("#searchtext").keypress(function (key) {
+                if (key.keyCode == 13) {
+                    key.preventDefault();
+                    fn_Search();
+                }
+            });
+        });
+
+        function fn_Search() {
+            var check_num = /[0-9]/; // 숫자
+            var check_eng = /[a-zA-Z]/; // 문자
+            var check_spc = /[~!@#$%^&*()_+|<>?:{}]/; // 특수문자
+            var check_kor = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/; // 한글체크
+            var searchtext = $("#searchtext").val();
+
+            if (searchtext == '' || searchtext == null) {
+                alert('입력된 검색어가 없습니다.');
+                return false;
+            }
+            if (!check_kor.test(searchtext) && !check_eng.test(searchtext)) {
+                alert("한글만 입력가능합니다.");
+                return false;
+            }
+            document.location.href = "http://www.gift-n.co.kr/Home/SearchList?searchtext=" + searchtext + "&pg=1&sort=1";
+
+        }
+    </script>
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-52BP3RJ3TF"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
+
+        gtag('config', 'G-52BP3RJ3TF');
+    </script>
+
+</body>
+</html>
